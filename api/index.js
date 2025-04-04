@@ -1,7 +1,7 @@
-// api/index.js - Vercel serverless function for 1inch API proxy
-import axios from 'axios';
+// Using CommonJS syntax which is more reliable on Vercel
+const axios = require('axios');
 
-export default async function handler(req, res) {
+module.exports = async (req, res) => {
   // Set CORS headers
   res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -65,4 +65,4 @@ export default async function handler(req, res) {
       details: error.response?.data || error.message
     });
   }
-}
+};

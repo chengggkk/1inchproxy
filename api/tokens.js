@@ -1,5 +1,5 @@
-// api/tokens.js - Vercel serverless function for token addresses
-export default function handler(req, res) {
+// Using CommonJS syntax which is more reliable on Vercel
+module.exports = (req, res) => {
     // Set CORS headers
     res.setHeader('Access-Control-Allow-Credentials', true);
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -28,4 +28,4 @@ export default function handler(req, res) {
     
     // Return the token addresses
     res.status(200).json(tokens);
-  }
+  };
