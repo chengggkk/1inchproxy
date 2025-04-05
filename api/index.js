@@ -20,7 +20,7 @@ module.exports = async (req, res) => {
     // Destructure query parameters with default values and additional optional parameters
     const { 
       address, 
-      chainId = '84532', 
+      chainId = '1', 
       limit = 100, 
       offset = 0,
       tokenAddress,
