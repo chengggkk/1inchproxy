@@ -17,7 +17,24 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const { address, chainId = '1', limit = 100, offset = 0 } = req.query;
+    // Destructure query parameters with default values and additional optional parameters
+    const { 
+      address, 
+      chainId = '84532', 
+      limit = 100, 
+      offset = 0,
+      tokenAddress,
+      fromTimestampMs,
+      toTimestampMs,
+      protocolName,
+      eventType,
+      tokenIn,
+      tokenOut,
+      minAmountUsd,
+      maxAmountUsd,
+      sortBy = 'timestamp',
+      sortDirection = 'desc'
+    } = req.query;
     
     // Validate required parameters
     if (!address) {
@@ -38,52 +55,67 @@ module.exports = async (req, res) => {
     // Build the 1inch transaction history API URL
     const apiUrl = `https://api.1inch.dev/history/v2.0/history/${address}/events`;
     
+    // Prepare params object with optional filtering
+    const params = {
+      chainId,
+      limit: Math.min(Number(limit), 1000), // Limit max to 1000
+      offset: Number(offset),
+      sortBy,
+      sortDirection
+    };
+
+    // Add optional parameters only if they are provided
+    if (tokenAddress) params.tokenAddress = tokenAddress;
+    if (fromTimestampMs) params.fromTimestampMs = fromTimestampMs;
+    if (toTimestampMs) params.toTimestampMs = toTimestampMs;
+    if (protocolName) params.protocolName = protocolName;
+    if (eventType) params.eventType = eventType;
+    if (tokenIn) params.tokenIn = tokenIn;
+    if (tokenOut) params.tokenOut = tokenOut;
+    if (minAmountUsd) params.minAmountUsd = minAmountUsd;
+    if (maxAmountUsd) params.maxAmountUsd = maxAmountUsd;
+    
     // Make request to 1inch API
     console.log(`Requesting transaction history for address: ${address}`);
     const response = await axios.get(apiUrl, {
       headers: { 
         Authorization: `Bearer ${apiKey}`
       },
-      params: {
-        chainId,
-        limit: Math.min(Number(limit), 1000), // Limit max to 1000
-        offset: Number(offset)
-      }
+      params
     });
     
-    // Log the raw response for debugging
-    console.log('Raw 1inch API response:', JSON.stringify(response.data, null, 2));
-
-    // Safely process the response
+    // Process and return the transaction history
     return res.status(200).json({
-      total: response.data?.total || 0,
-      limit: response.data?.limit || 0,
-      offset: response.data?.offset || 0,
-      events: Array.isArray(response.data?.events) 
-        ? response.data.events.map(event => ({
-            type: event.type || 'Unknown',
-            txHash: event.txHash || '',
-            timestamp: event.timestamp || null,
-            protocolName: event.protocolName || 'Unknown',
-            fromAddress: event.fromAddress || '',
-            toAddress: event.toAddress || '',
-            tokenAmounts: event.tokenAmounts || [],
-          }))
-        : []
+      total: response.data.total,
+      limit: response.data.limit,
+      offset: response.data.offset,
+      events: response.data.events.map(event => ({
+        // Comprehensive event object
+        type: event.type,
+        txHash: event.txHash,
+        timestamp: event.timestamp,
+        protocolName: event.protocolName,
+        fromAddress: event.fromAddress,
+        toAddress: event.toAddress,
+        tokenAmounts: event.tokenAmounts,
+        amountUsd: event.amountUsd,
+        gasUsed: event.gasUsed,
+        gasPrice: event.gasPrice,
+        // Add more fields as required
+      }))
     });
   } catch (error) {
     console.error("Error fetching transaction history:", error.message);
     
     if (error.response) {
       console.error("Response status:", error.response.status);
-      console.error("Response data:", JSON.stringify(error.response.data, null, 2));
+      console.error("Response data:", error.response.data);
     }
     
     // Return detailed error information
     return res.status(error.response?.status || 500).json({ 
       error: "Failed to fetch transaction history", 
-      details: error.response?.data || error.message,
-      rawError: error.toString()
+      details: error.response?.data || error.message
     });
   }
 };
