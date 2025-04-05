@@ -1,85 +1,77 @@
-// Using CommonJS syntax which is more reliable on Vercel
 const axios = require('axios');
 
+// 1inch Fusion+ API configuration
+const ONE_INCH_API_BASE = 'https://api.1inch.dev/fusion-plus';
+
+// Middleware to handle CORS and proxy requests
 module.exports = async (req, res) => {
-  // Set CORS headers
-  res.setHeader('Access-Control-Allow-Credentials', true);
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
-  res.setHeader(
-    'Access-Control-Allow-Headers',
-    'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
-  );
+    // Set CORS headers
+    res.setHeader('Access-Control-Allow-Credentials', true);
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+    res.setHeader(
+        'Access-Control-Allow-Headers', 
+        'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization'
+    );
 
-  // Handle OPTIONS request (preflight)
-  if (req.method === 'OPTIONS') {
-    res.status(200).end();
-    return;
-  }
-
-  try {
-    // Extract parameters from query
-    const srcChain = req.query.srcChain || req.query.srcchain || '1';
-    const dstChain = req.query.dstChain || req.query.dstchain || '42161';
-    const srcTokenAddress = req.query.srcTokenAddress || req.query.srctokenaddress;
-    const dstTokenAddress = req.query.dstTokenAddress || req.query.dsttokenaddress;
-    const amount = req.query.amount;
-    const walletAddress = req.query.walletAddress || req.query.walletaddress;
-    const enableEstimate = req.query.enableEstimate || req.query.enableestimate || 'true';
-    const source = req.query.source || 'sdk';
-    
-    // Validate required parameters
-    if (!srcTokenAddress) {
-        console.log("missing srcTokenAddress");
-      }
-      
-      if (!dstTokenAddress) {
-        console.log("missing dstTokenAddress");
-      }
-      
-      if (!amount) {
-        console.log("missing amount");
-      }
-      
-      if (!walletAddress) {
-        console.log("missing walletAddress");
-      }
-      
-      if (!srcTokenAddress || !dstTokenAddress || !amount || !walletAddress) {
-        return res.status(400).json({ 
-          error: "Missing required parameters. Please provide srcTokenAddress, dstTokenAddress, amount, and walletAddress." 
-        });
-      }
-      
-    // Build the 1inch Fusion Plus API URL
-    const apiUrl = `https://api.1inch.dev/fusion-plus/quoter/v1.0/quote/receive/?srcChain=${srcChain}&dstChain=${dstChain}&srcTokenAddress=${srcTokenAddress}&dstTokenAddress=${dstTokenAddress}&amount=${amount}&walletAddress=${walletAddress}&enableEstimate=${enableEstimate}&source=${source}`;
-    
-    // Get API key from environment variable
-    const apiKey = process.env.API_AUTH_TOKEN;
-    
-    if (!apiKey) {
-      return res.status(500).json({ 
-        error: "API key not configured. Please set the API_AUTH_TOKEN environment variable." 
-      });
+    // Handle OPTIONS request
+    if (req.method === 'OPTIONS') {
+        res.status(200).end();
+        return;
     }
 
-    // Make request to 1inch API
-    const response = await axios.get(apiUrl, {
-      headers: { 
-        Authorization: `Bearer ${apiKey}`,
-        Accept: 'application/json'
-      }
-    });
+    // Extract API key from headers
+    const apiKey = req.headers.authorization?.replace('Bearer ', '');
     
-    // Return the data
-    return res.status(200).json(response.data);
-  } catch (error) {
-    console.error("Error fetching quote data:", error.message);
-    
-    // Return detailed error information
-    return res.status(error.response?.status || 500).json({ 
-      error: "Failed to fetch quote data", 
-      details: error.response?.data || error.message
-    });
-  }
+    // Validate API key
+    if (!apiKey) {
+        return res.status(401).json({ error: 'Missing 1inch Developer Portal API Key' });
+    }
+
+    try {
+        // Determine the specific endpoint based on the request path
+        const endpoint = req.query.endpoint || 'quote';
+        const queryParams = { ...req.query };
+        delete queryParams.endpoint;
+
+        // Construct the full URL with query parameters
+        const url = new URL(`${ONE_INCH_API_BASE}/${endpoint}`);
+        Object.keys(queryParams).forEach(key => 
+            url.searchParams.append(key, queryParams[key])
+        );
+
+        // Make the request to 1inch API
+        const response = await axios.get(url.toString(), {
+            headers: {
+                'Authorization': `Bearer ${apiKey}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        // Return the response
+        return res.status(200).json(response.data);
+    } catch (error) {
+        console.error('Proxy error:', error);
+
+        // Handle specific error scenarios
+        if (error.response) {
+            // The request was made and the server responded with a status code
+            return res.status(error.response.status).json({
+                error: error.response.data,
+                status: error.response.status
+            });
+        } else if (error.request) {
+            // The request was made but no response was received
+            return res.status(500).json({
+                error: 'No response received from 1inch API',
+                details: error.message
+            });
+        } else {
+            // Something happened in setting up the request
+            return res.status(500).json({
+                error: 'Error setting up the request',
+                details: error.message
+            });
+        }
+    }
 };
