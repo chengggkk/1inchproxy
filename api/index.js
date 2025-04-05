@@ -84,38 +84,55 @@ module.exports = async (req, res) => {
       params
     });
     
+    // Log full response for debugging
+    console.log('Full API Response:', JSON.stringify(response.data, null, 2));
+
+    // Comprehensive response handling
+    const responseData = response.data || {};
+    const events = Array.isArray(responseData.events) ? responseData.events : [];
+    
     // Process and return the transaction history
     return res.status(200).json({
-      total: response.data.total,
-      limit: response.data.limit,
-      offset: response.data.offset,
-      events: response.data.events.map(event => ({
-        // Comprehensive event object
-        type: event.type,
-        txHash: event.txHash,
-        timestamp: event.timestamp,
-        protocolName: event.protocolName,
-        fromAddress: event.fromAddress,
-        toAddress: event.toAddress,
-        tokenAmounts: event.tokenAmounts,
-        amountUsd: event.amountUsd,
-        gasUsed: event.gasUsed,
-        gasPrice: event.gasPrice,
-        // Add more fields as required
-      }))
+      total: responseData.total || events.length,
+      limit: responseData.limit || limit,
+      offset: responseData.offset || offset,
+      events: events.map(event => {
+        // Provide default values and handle potential undefined properties
+        return {
+          type: event.type || 'unknown',
+          txHash: event.txHash || null,
+          timestamp: event.timestamp || null,
+          protocolName: event.protocolName || 'unknown',
+          fromAddress: event.fromAddress || null,
+          toAddress: event.toAddress || null,
+          tokenAmounts: event.tokenAmounts || [],
+          amountUsd: event.amountUsd || null,
+          gasUsed: event.gasUsed || null,
+          gasPrice: event.gasPrice || null,
+          // Fallback to empty object if no additional details
+          additionalDetails: event || {}
+        };
+      })
     });
   } catch (error) {
-    console.error("Error fetching transaction history:", error.message);
+    console.error("Full error object:", error);
     
     if (error.response) {
       console.error("Response status:", error.response.status);
       console.error("Response data:", error.response.data);
+      
+      // Return the specific error from the API if available
+      return res.status(error.response.status).json({ 
+        error: "Failed to fetch transaction history", 
+        details: error.response.data || error.message
+      });
     }
     
-    // Return detailed error information
-    return res.status(error.response?.status || 500).json({ 
+    // Generic error handling for network errors, etc.
+    return res.status(500).json({ 
       error: "Failed to fetch transaction history", 
-      details: error.response?.data || error.message
+      details: error.message,
+      stack: error.stack
     });
   }
 };
