@@ -36,7 +36,7 @@ module.exports = async (req, res) => {
     }
 
     // Build the 1inch API URL
-    const apiUrl = `https://api.1inch.dev/charts/v1.0/chart/line/${token0}/${token1}/${period}/1`;
+    const apiUrl = `https://api.1inch.dev/charts/v1.0/chart/aggregated/candle/${token0}/${token1}/${period}/1`;
     
     // Get API key from environment variable
     const apiKey = process.env.API_AUTH_TOKEN;
