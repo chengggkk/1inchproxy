@@ -1,4 +1,4 @@
-// Using CommonJS syntax which is more reliable on Vercel
+// api/index.js - Vercel serverless function with corrected 1inch API endpoint
 const axios = require('axios');
 
 module.exports = async (req, res) => {
@@ -27,16 +27,29 @@ module.exports = async (req, res) => {
       });
     }
     
-    // Available periods: 24H, 1W, 1M, 1Y, AllTime
-    const validPeriods = ["24H", "1W", "1M", "1Y", "AllTime"];
-    if (!validPeriods.includes(period)) {
-      return res.status(400).json({ 
-        error: `Invalid period. Must be one of: ${validPeriods.join(", ")}` 
-      });
+    // Convert period to seconds for the API
+    let seconds;
+    switch(period) {
+      case "24H":
+        seconds = 3600; // 1 hour candles
+        break;
+      case "1W":
+        seconds = 14400; // 4 hour candles
+        break;
+      case "1M":
+        seconds = 86400; // 1 day candles
+        break;
+      case "1Y":
+        seconds = 604800; // 1 week candles
+        break;
+      default:
+        return res.status(400).json({
+          error: "Invalid period. Must be one of: 24H, 1W, 1M, 1Y"
+        });
     }
 
-    // Build the 1inch API URL
-    const apiUrl = `https://api.1inch.dev/charts/v1.0/chart/line/${token0}/${token1}/${period}/1`;
+    // Build the 1inch API URL with the correct endpoint
+    const apiUrl = `https://api.1inch.dev/charts/v1.0/chart/aggregated/candle/${token0}/${token1}/${seconds}/1`;
     
     // Get API key from environment variable
     const apiKey = process.env.API_AUTH_TOKEN;
@@ -48,6 +61,7 @@ module.exports = async (req, res) => {
     }
 
     // Make request to 1inch API
+    console.log(`Requesting URL: ${apiUrl}`);
     const response = await axios.get(apiUrl, {
       headers: { 
         Authorization: `Bearer ${apiKey}`
@@ -58,6 +72,11 @@ module.exports = async (req, res) => {
     return res.status(200).json(response.data);
   } catch (error) {
     console.error("Error fetching 1inch chart data:", error.message);
+    
+    if (error.response) {
+      console.error("Response status:", error.response.status);
+      console.error("Response data:", error.response.data);
+    }
     
     // Return detailed error information
     return res.status(error.response?.status || 500).json({ 
