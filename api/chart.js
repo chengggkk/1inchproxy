@@ -1,6 +1,9 @@
 // Using CommonJS syntax which is more reliable on Vercel
 const axios = require('axios');
 
+// USDC token address on Ethereum mainnet
+const USDC_ADDRESS = '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48';
+
 module.exports = async (req, res) => {
   // Set CORS headers
   res.setHeader('Access-Control-Allow-Credentials', true);
@@ -18,25 +21,25 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const { token0, token1, period } = req.query;
+    const { token1, period } = req.query;
     
     // Validate required parameters
-    if (!token0 || !token1 || !period) {
+    if (!token1 || !period) {
       return res.status(400).json({ 
-        error: "Missing required parameters. Please provide token0, token1, and period." 
+        error: "Missing required parameters. Please provide token1 and period." 
       });
     }
     
-    // Available periods: 24H, 1W, 1M, 1Y, AllTime
-    const validPeriods = ["24H", "1W", "1M", "1Y", "AllTime"];
+    // Available periods in seconds: 300, 900, 3600, 14400, 86400, 604800
+    const validPeriods = ["300", "900", "3600", "14400", "86400", "604800"];
     if (!validPeriods.includes(period)) {
       return res.status(400).json({ 
-        error: `Invalid period. Must be one of: ${validPeriods.join(", ")}` 
+        error: `Invalid period. Must be one of: ${validPeriods.join(", ")} seconds` 
       });
     }
 
-    // Build the 1inch API URL
-    const apiUrl = `https://api.1inch.dev/charts/v1.0/chart/aggregated/candle/${token0}/${token1}/${period}/1`;
+    // Build the 1inch API URL with USDC as token0
+    const apiUrl = `https://api.1inch.dev/charts/v1.0/chart/aggregated/candle/${USDC_ADDRESS}/${token1}/${period}/1`;
     
     // Get API key from environment variable
     const apiKey = process.env.API_AUTH_TOKEN;
