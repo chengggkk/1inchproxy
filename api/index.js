@@ -51,35 +51,39 @@ module.exports = async (req, res) => {
       }
     });
     
-    // Process and return the transaction history
+    // Log the raw response for debugging
+    console.log('Raw 1inch API response:', JSON.stringify(response.data, null, 2));
+
+    // Safely process the response
     return res.status(200).json({
-      total: response.data.total,
-      limit: response.data.limit,
-      offset: response.data.offset,
-      events: response.data.events.map(event => ({
-        // Customize the event object as needed
-        type: event.type,
-        txHash: event.txHash,
-        timestamp: event.timestamp,
-        protocolName: event.protocolName,
-        fromAddress: event.fromAddress,
-        toAddress: event.toAddress,
-        tokenAmounts: event.tokenAmounts,
-        // Add more fields as required
-      }))
+      total: response.data?.total || 0,
+      limit: response.data?.limit || 0,
+      offset: response.data?.offset || 0,
+      events: Array.isArray(response.data?.events) 
+        ? response.data.events.map(event => ({
+            type: event.type || 'Unknown',
+            txHash: event.txHash || '',
+            timestamp: event.timestamp || null,
+            protocolName: event.protocolName || 'Unknown',
+            fromAddress: event.fromAddress || '',
+            toAddress: event.toAddress || '',
+            tokenAmounts: event.tokenAmounts || [],
+          }))
+        : []
     });
   } catch (error) {
     console.error("Error fetching transaction history:", error.message);
     
     if (error.response) {
       console.error("Response status:", error.response.status);
-      console.error("Response data:", error.response.data);
+      console.error("Response data:", JSON.stringify(error.response.data, null, 2));
     }
     
     // Return detailed error information
     return res.status(error.response?.status || 500).json({ 
       error: "Failed to fetch transaction history", 
-      details: error.response?.data || error.message
+      details: error.response?.data || error.message,
+      rawError: error.toString()
     });
   }
 };
