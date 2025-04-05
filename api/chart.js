@@ -2,7 +2,7 @@
 const axios = require('axios');
 
 // USDC token address on Ethereum mainnet
-const USDC_ADDRESS = '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48';
+const USDC_ADDRESS = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48';
 
 module.exports = async (req, res) => {
   // Set CORS headers
