@@ -39,7 +39,7 @@ module.exports = async (req, res) => {
     }
 
     // Build the 1inch API URL with USDC as token0
-    const apiUrl = `https://api.1inch.dev/charts/v1.0/chart/aggregated/candle/${USDC_ADDRESS}/${token1}/${period}/1`;
+    const apiUrl = `https://api.1inch.dev/charts/v1.0/chart/aggregated/candle/${token1}/${USDC_ADDRESS}/${period}/1`;
     
     // Get API key from environment variable
     const apiKey = process.env.API_AUTH_TOKEN;
