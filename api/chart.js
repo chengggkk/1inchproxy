@@ -21,12 +21,12 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const { token1, period } = req.query;
+    const { token0, period } = req.query;
     
     // Validate required parameters
-    if (!token1 || !period) {
+    if (!token0 || !period) {
       return res.status(400).json({ 
-        error: "Missing required parameters. Please provide token1 and period." 
+        error: "Missing required parameters. Please provide token0 and period." 
       });
     }
     
@@ -39,7 +39,7 @@ module.exports = async (req, res) => {
     }
 
     // Build the 1inch API URL with USDC as token0
-    const apiUrl = `https://api.1inch.dev/charts/v1.0/chart/aggregated/candle/${token1}/${USDC_ADDRESS}/${period}/1`;
+    const apiUrl = `https://api.1inch.dev/charts/v1.0/chart/aggregated/candle/${token0}/${USDC_ADDRESS}/${period}/1`;
     
     // Get API key from environment variable
     const apiKey = process.env.API_AUTH_TOKEN;
