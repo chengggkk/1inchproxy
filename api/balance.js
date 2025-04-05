@@ -18,7 +18,8 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const { walletAddress } = req.query;
+    // Handle both camelCase and lowercase parameter names
+    const walletAddress = req.query.walletAddress || req.query.walletaddress;
     
     // Validate required parameters
     if (!walletAddress) {
