@@ -4,6 +4,7 @@
       { "src": "api/**/*.js", "use": "@vercel/node" }
     ],
     "routes": [
+        { "src": "/api/fusionplus", "dest": "/api/fusionplus.js" },
       { "src": "/api/chart", "dest": "/api/chart.js" },
       { "src": "/api/balance", "dest": "/api/balance.js" },
       { "src": "/api", "dest": "/api/index.js" },

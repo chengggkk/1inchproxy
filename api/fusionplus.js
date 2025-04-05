@@ -29,12 +29,28 @@ module.exports = async (req, res) => {
     const source = req.query.source || 'sdk';
     
     // Validate required parameters
-    if (!srcTokenAddress || !dstTokenAddress || !amount || !walletAddress) {
-      return res.status(400).json({ 
-        error: "Missing required parameters. Please provide srcTokenAddress, dstTokenAddress, amount, and walletAddress." 
-      });
-    }
-    
+    if (!srcTokenAddress) {
+        console.log("missing srcTokenAddress");
+      }
+      
+      if (!dstTokenAddress) {
+        console.log("missing dstTokenAddress");
+      }
+      
+      if (!amount) {
+        console.log("missing amount");
+      }
+      
+      if (!walletAddress) {
+        console.log("missing walletAddress");
+      }
+      
+      if (!srcTokenAddress || !dstTokenAddress || !amount || !walletAddress) {
+        return res.status(400).json({ 
+          error: "Missing required parameters. Please provide srcTokenAddress, dstTokenAddress, amount, and walletAddress." 
+        });
+      }
+      
     // Build the 1inch Fusion Plus API URL
     const apiUrl = `https://api.1inch.dev/fusion-plus/quoter/v1.0/quote/receive/?srcChain=${srcChain}&dstChain=${dstChain}&srcTokenAddress=${srcTokenAddress}&dstTokenAddress=${dstTokenAddress}&amount=${amount}&walletAddress=${walletAddress}&enableEstimate=${enableEstimate}&source=${source}`;
     
